@@ -10,20 +10,20 @@ from src.auth.dependencies import get_current_user, get_current_phone_number
 router = APIRouter(prefix="/auth", tags=["인증"])
 
 
-# 회원가입 요청 스키마 (앱에서 보내는 데이터 형식)
+# 회원가입 요청 스키마
 class SignUpRequest(BaseModel):
-    phone_number: str = Field(..., description="전화번호 (예: +821012345678)")
-    cognito_id: str = Field(..., description="Cognito에서 발급받은 고유 ID (sub)")
-    given_name: str = Field(..., description="이름")
-    family_name: str = Field(..., description="성")
-    gender: Gender = Field(..., description="성별 (남자/여자)")
-    birthdate: date = Field(..., description="생년월일 (YYYY-MM-DD)")
+    phone_number: str = Field(...)
+    cognito_id: str = Field(...)
+    given_name: str = Field(...)
+    family_name: str = Field(...)
+    gender: Gender = Field(...)
+    birthdate: date = Field(...)
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup(
-    request: SignUpRequest,
-    db: Session = Depends(get_db)
+    request: SignUpRequest,                                    # 클라이언트가 보낸 JSON 데이터를 SignUpRequest 객체로 자동 변환.
+    db: Session = Depends(get_db)                              # 데이터베이스 연결 세션을 FastAPI의 의존성 주입(Dependency Injection) 으로 받아옴
 ):
     """
     회원가입 엔드포인트
@@ -36,7 +36,11 @@ async def signup(
     3. 앱 → 백엔드: 이 API를 호출하여 사용자 정보 저장
     """
     # 이미 존재하는 전화번호인지 확인
-    existing_user = db.query(User).filter(User.phone_number == request.phone_number).first()
+    existing_user = (
+        db.query(User)                                         # SQLAlchemy ORM을 이용해 users 테이블을 조회
+        .filter(User.phone_number == request.phone_number)     # 전달받은 request.phone_number 값과 같은 전화번호가 이미 있는지 검사.
+        .first()                                               # 첫 번째 결과를 반환 (없으면 None)                               
+    )
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,17 +59,15 @@ async def signup(
     new_user = User(
         phone_number=request.phone_number,
         cognito_id=request.cognito_id,
-        given_name=request.given_name,
-        family_name=request.family_name,
         gender=request.gender,
         birthdate=request.birthdate,
-        name=f"{request.family_name}{request.given_name}",  # 전체 이름 조합
-        phone_number_verified=True  # Cognito를 통해 인증되었다고 가정
+        name=f"{request.family_name}{request.given_name}",  
+    
     )
     
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    db.add(new_user)                                     # 새 User 객체를 세션에 추가 준비
+    db.commit()                                          # 변경사항을 데이터베이스에 커밋하여 실제로 저장
+    db.refresh(new_user)                                 # 새로 생성된 사용자의 최신 상태를 가져옴
     
     return {
         "message": "회원가입이 완료되었습니다",

@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base   # ORM 세션과 모�
 from sqlalchemy.engine import URL                           # 데이터베이스 URL 생성용 클래스
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=r"C:\UTeamProject\Sonjutoktok\src\.env")
+load_dotenv()
 
 # 환경 변수에서 데이터베이스 연결 정보 로드
 DB_USER = os.getenv("DB_USER")
