@@ -33,3 +33,12 @@ async def get_my_phone(
     phone_number: str = Depends(get_current_phone_number)):  
     return {"phone_number": phone_number}
 
+
+#현재 로그인한 사용자 계정 삭제
+@router.delete("/me/delete", status_code=204)
+async def delete_my_account(
+    current_user_phone: str = Depends(get_current_phone_number)
+):
+    if(db.delete(User).where(User.phone_number == current_user_phone)):
+    
+    return {"message": "Account deleted successfully"}
